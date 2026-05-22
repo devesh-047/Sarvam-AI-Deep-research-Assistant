@@ -4,6 +4,8 @@ A grounded, deterministic web research assistant that answers complex queries us
 
 It natively understands Romanized Indic languages (Hinglish/Benglish) and provides localized responses via Sarvam AI, while maintaining a robust English-centric retrieval core for maximum evidence quality.
 
+**Repository:** [github.com/devesh-047/Sarvam-AI-Deep-research-Assistant](https://github.com/devesh-047/Sarvam-AI-Deep-research-Assistant)
+
 ---
 
 ## 2. Video Demo
@@ -158,8 +160,8 @@ The system seamlessly handles Romanized Indic text (e.g., Hinglish, Benglish) an
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/deep-research-assistant.git
-cd deep-research-assistant
+git clone https://github.com/devesh-047/Sarvam-AI-Deep-research-Assistant.git
+cd Sarvam-AI-Deep-research-Assistant
 
 # 2. Set up Virtual Environment
 python3 -m venv venv
