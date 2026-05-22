@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deep-research-agent"
+version = "0.2.0"
+description = "Deep Research Agent - Stage 2: Dense RAG Pipeline"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit",
+    "httpx",
+    "trafilatura",
+    "beautifulsoup4",
+    "pydantic",
+    "pydantic-settings",
+    "python-dotenv",
+    "tiktoken",
+    "sentence-transformers",
+    "faiss-cpu",
+    "openai"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

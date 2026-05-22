@@ -1,0 +1,15 @@
+streamlit
+httpx
+trafilatura
+beautifulsoup4
+pydantic
+pydantic-settings
+python-dotenv
+tiktoken
+sentence-transformers
+faiss-cpu
+openai
+google-genai
+torchvision
+pytest
+pytest-asyncio
