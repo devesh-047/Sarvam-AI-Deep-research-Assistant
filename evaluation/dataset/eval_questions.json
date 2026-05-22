@@ -1,0 +1,122 @@
+[
+  {
+    "id": "F001",
+    "category": "factual",
+    "question": "What year was the transformer architecture introduced in machine learning?",
+    "expected_characteristics": ["cites a year", "mentions 'Attention Is All You Need'", "cites a source"]
+  },
+  {
+    "id": "F002",
+    "category": "factual",
+    "question": "What is the approximate number of parameters in GPT-4?",
+    "expected_characteristics": ["mentions a number or range", "acknowledges uncertainty if exact count is unknown", "cites a source"]
+  },
+  {
+    "id": "F003",
+    "category": "factual",
+    "question": "Who founded OpenAI and in what year?",
+    "expected_characteristics": ["names founders", "states founding year 2015", "cites source"]
+  },
+  {
+    "id": "F004",
+    "category": "factual",
+    "question": "What is the capital city of Australia?",
+    "expected_characteristics": ["states Canberra", "does not confuse with Sydney", "cites source"]
+  },
+  {
+    "id": "F005",
+    "category": "factual",
+    "question": "What programming language is PyTorch primarily written in?",
+    "expected_characteristics": ["mentions C++ and Python", "cites source"]
+  },
+  {
+    "id": "C001",
+    "category": "comparison",
+    "question": "What are the main differences between BERT and GPT architectures?",
+    "expected_characteristics": ["mentions encoder vs decoder", "mentions bidirectional vs unidirectional", "cites multiple sources"]
+  },
+  {
+    "id": "C002",
+    "category": "comparison",
+    "question": "How does RAG (Retrieval-Augmented Generation) differ from fine-tuning an LLM?",
+    "expected_characteristics": ["explains retrieval vs weight update", "discusses tradeoffs", "cites sources"]
+  },
+  {
+    "id": "C003",
+    "category": "comparison",
+    "question": "What are the differences between FAISS and Pinecone as vector stores?",
+    "expected_characteristics": ["mentions open-source vs managed", "discusses scalability", "cites sources"]
+  },
+  {
+    "id": "C004",
+    "category": "comparison",
+    "question": "Compare the energy consumption of nuclear power plants versus solar farms per kilowatt-hour.",
+    "expected_characteristics": ["provides numerical comparison", "acknowledges lifecycle emissions", "cites sources"]
+  },
+  {
+    "id": "M001",
+    "category": "multi_hop",
+    "question": "Who created the programming language that PyTorch is most commonly used with, and what year was that language first released?",
+    "expected_characteristics": ["identifies Python", "names Guido van Rossum", "states 1991", "cites sources"]
+  },
+  {
+    "id": "M002",
+    "category": "multi_hop",
+    "question": "Which company acquired DeepMind, and what is DeepMind's most famous game-playing AI system?",
+    "expected_characteristics": ["says Google/Alphabet", "mentions AlphaGo or AlphaZero", "cites sources"]
+  },
+  {
+    "id": "M003",
+    "category": "multi_hop",
+    "question": "What dataset was used to train the original Word2Vec embeddings, and who were its authors?",
+    "expected_characteristics": ["mentions Google News corpus", "names Mikolov et al.", "cites sources"]
+  },
+  {
+    "id": "X001",
+    "category": "conflicting_sources",
+    "question": "Is coffee beneficial or harmful to human health?",
+    "expected_characteristics": ["acknowledges conflicting evidence", "cites both perspectives", "does not take a single definitive stance without qualification"]
+  },
+  {
+    "id": "X002",
+    "category": "conflicting_sources",
+    "question": "What is the current scientific consensus on the safety of genetically modified organisms (GMOs) for human consumption?",
+    "expected_characteristics": ["mentions mainstream scientific consensus", "acknowledges public debate", "cites multiple sources"]
+  },
+  {
+    "id": "X003",
+    "category": "conflicting_sources",
+    "question": "How effective are cryptocurrency investments as a hedge against inflation?",
+    "expected_characteristics": ["presents multiple viewpoints", "acknowledges high volatility", "does not give unqualified financial advice", "cites sources"]
+  },
+  {
+    "id": "I001",
+    "category": "insufficient_evidence",
+    "question": "What is the internal architecture of the Gemini Ultra model weights?",
+    "expected_characteristics": ["acknowledges this information is not publicly available", "states insufficient evidence", "does not hallucinate details"]
+  },
+  {
+    "id": "I002",
+    "category": "insufficient_evidence",
+    "question": "What is the exact revenue of a small private company with no public filings?",
+    "expected_characteristics": ["acknowledges information is not publicly available", "does not invent figures", "states uncertainty"]
+  },
+  {
+    "id": "V001",
+    "category": "conversational_followup",
+    "question": "What are the latest breakthroughs in quantum computing?",
+    "expected_characteristics": ["mentions recent developments", "cites sources", "provides a grounded answer"]
+  },
+  {
+    "id": "V002",
+    "category": "conversational_followup",
+    "question": "How does photonic quantum computing specifically compare to the approaches mentioned?",
+    "expected_characteristics": ["references prior context about quantum computing", "discusses photonic approach", "cites sources"]
+  },
+  {
+    "id": "V003",
+    "category": "conversational_followup",
+    "question": "Which companies are leading in this space?",
+    "expected_characteristics": ["references prior quantum computing context", "names specific companies", "cites sources"]
+  }
+]

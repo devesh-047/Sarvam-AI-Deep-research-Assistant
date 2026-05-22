@@ -91,11 +91,24 @@ class Citation(BaseModel):
     domain: str
 
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import List as _List, Literal as _Literal
+
+# Allowed event types for the ReAct-style workflow panel
+_EventType = _Literal["thought", "action", "observation", "system", "final_answer", "token"]
+
+@dataclass
+class ResearchPlan:
+    """Output of the research planner — visible to the user."""
+    plan_text: str
+    search_queries: _List[str] = field(default_factory=list)
 
 @dataclass
 class PipelineEvent:
     stage: str
     message: str
     data: Optional[dict] = None
-
+    # ReAct-style event type — drives UI rendering
+    # thought=reasoning summary, action=tool use, observation=result,
+    # system=infra step, final_answer=streaming answer token, token=answer chunk
+    event_type: str = "system"

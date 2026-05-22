@@ -59,6 +59,15 @@ class FAISSVectorStore:
                 self._index = None
                 self._id_map = []
 
+    def _init_empty(self) -> None:
+        """Initialise as empty store (used as fallback when __init__ fails)."""
+        self.index_path = settings.faiss_index_path
+        self.map_path = settings.faiss_map_path
+        self._id_map = []
+        self._index = None
+        logger.info("[VectorStore] Initialised empty FAISS store (fallback).")
+
+
     def save(self) -> None:
         """Persist index and id map to disk."""
         os.makedirs(os.path.dirname(self.index_path), exist_ok=True)

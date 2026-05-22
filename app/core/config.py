@@ -41,6 +41,14 @@ class Settings(BaseSettings):
     max_summary_tokens: int = 400      # token budget for the rolling summary block
     summary_after_turns: int = 4       # threshold of turns after which we start summarizing (not strictly used but config ready)
 
+    # Stage 4 — Planner
+    enable_llm_planning: bool = True   # LLM planning with deterministic fallback
+
+    # Stage 4 — Evaluation
+    eval_output_dir: str = "evaluation/results"
+    eval_min_answer_length: int = 200  # chars — threshold for "complete" answer
+    eval_retrieval_score_threshold: float = 0.3  # min score for a retrieval hit
+
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

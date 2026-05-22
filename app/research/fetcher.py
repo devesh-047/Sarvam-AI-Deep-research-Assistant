@@ -13,14 +13,23 @@ class AsyncFetcher:
         self.max_concurrent = settings.max_concurrent_fetches
 
     async def fetch_page(self, client: httpx.AsyncClient, url: str) -> FetchedPage:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Upgrade-Insecure-Requests": "1"
+        }
         try:
-            response = await client.get(url, follow_redirects=True)
+            response = await client.get(url, headers=headers, follow_redirects=True)
             content_type = response.headers.get("Content-Type", "")
             return FetchedPage(
                 url=str(response.url),
                 status_code=response.status_code,
                 content_type=content_type,
-                html=response.text if "text/html" in content_type else None,
+                html=response.text if "text/html" in content_type.lower() else None,
                 error=None if response.status_code == 200 else f"Status: {response.status_code}"
             )
         except Exception as e:
@@ -45,3 +54,4 @@ class AsyncFetcher:
         async with httpx.AsyncClient(limits=limits, timeout=timeout) as client:
             tasks = [fetch_with_sem(client, url) for url in urls]
             return await asyncio.gather(*tasks)
+
