@@ -32,7 +32,6 @@ async def test_plan_event_is_emitted(agent):
          patch("app.research.agent.chunk_document") as mock_chunk, \
          patch("app.research.agent.embed_texts") as mock_embed, \
          patch("app.research.agent.build_context") as mock_context, \
-         patch("app.research.agent.generate_answer", new_callable=AsyncMock) as mock_generate, \
          patch("app.research.summarizer.update_rolling_summary", new_callable=AsyncMock):
 
         mock_tavily.return_value.search = AsyncMock(return_value=[
@@ -48,7 +47,6 @@ async def test_plan_event_is_emitted(agent):
         mock_chunk.return_value = []
         mock_embed.return_value = __import__("numpy").array([]).reshape(0, 384)
         mock_context.return_value = ("prompt", [])
-        mock_generate.return_value = "Test answer."
 
         events = []
         async for event in agent.stream_run("What is quantum computing?", session_id=1):
@@ -80,7 +78,6 @@ async def test_select_evidence_event_is_emitted(agent):
          patch("app.research.agent.chunk_document") as mock_chunk_fn, \
          patch("app.research.agent.embed_texts") as mock_embed, \
          patch("app.research.agent.build_context") as mock_context, \
-         patch("app.research.agent.generate_answer", new_callable=AsyncMock) as mock_generate, \
          patch("app.research.summarizer.update_rolling_summary", new_callable=AsyncMock):
 
         mock_tavily.return_value.search = AsyncMock(return_value=[
@@ -112,7 +109,6 @@ async def test_select_evidence_event_is_emitted(agent):
         agent.retriever.retrieve.return_value = [retrieved_chunk]
 
         mock_context.return_value = ("prompt", [])
-        mock_generate.return_value = "Answer."
         agent.turn_repo.update_turn_results = MagicMock()
 
         events = []
@@ -157,7 +153,6 @@ async def test_plan_complete_data_has_queries(agent):
          patch("app.research.agent.chunk_document") as mock_chunk, \
          patch("app.research.agent.embed_texts") as mock_embed, \
          patch("app.research.agent.build_context") as mock_context, \
-         patch("app.research.agent.generate_answer", new_callable=AsyncMock) as mock_generate, \
          patch("app.research.summarizer.update_rolling_summary", new_callable=AsyncMock):
 
         mock_tavily.return_value.search = AsyncMock(return_value=[
@@ -173,7 +168,6 @@ async def test_plan_complete_data_has_queries(agent):
         mock_chunk.return_value = []
         mock_embed.return_value = __import__("numpy").array([]).reshape(0, 384)
         mock_context.return_value = ("prompt", [])
-        mock_generate.return_value = "Answer text."
 
         plan_complete_event = None
         async for event in agent.stream_run("What is FAISS?", session_id=1):

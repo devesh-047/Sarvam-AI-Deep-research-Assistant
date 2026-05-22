@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime, timezone
 
 class SearchResult(BaseModel):
@@ -82,6 +82,9 @@ class RetrievedChunk(BaseModel):
     domain: str
     text: str
     score: float
+    retrieval_method: str = "dense"
+    dense_score: Optional[float] = None
+    lexical_score: Optional[float] = None
     citation_label: str = ""  # e.g. "[S1]" — filled in by context builder
 
 class Citation(BaseModel):

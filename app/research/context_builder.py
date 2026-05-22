@@ -64,26 +64,9 @@ def build_context(
     """
     max_tokens = max_tokens or settings.max_context_tokens
 
-    # --- Assign citation labels and de-duplicate sources ---
+    # --- Build evidence section within token budget ---
     url_to_label: dict = {}
     citations: List[Citation] = []
-    labeled_chunks: List[Tuple[str, RetrievedChunk]] = []  # (label, chunk)
-
-    for chunk in retrieved_chunks:
-        url = chunk.source_url
-        if url not in url_to_label:
-            label = f"[S{len(url_to_label) + 1}]"
-            url_to_label[url] = label
-            citations.append(Citation(
-                label=label,
-                title=chunk.title,
-                url=url,
-                domain=chunk.domain,
-            ))
-        chunk.citation_label = url_to_label[url]
-        labeled_chunks.append((url_to_label[url], chunk))
-
-    # --- Build evidence section within token budget ---
     evidence_parts: List[str] = []
     used_tokens = 0
 
@@ -101,12 +84,23 @@ def build_context(
     preamble_tokens = _count_tokens(preamble)
     budget = max_tokens - preamble_tokens - 200  # 200-token buffer for answer instructions
 
-    for label, chunk in labeled_chunks:
+    for chunk in retrieved_chunks:
+        url = chunk.source_url
+        label = url_to_label.get(url) or f"[S{len(url_to_label) + 1}]"
         block = f"{label} {chunk.title} | {chunk.domain} | {chunk.source_url}\n{chunk.text}\n"
         block_tokens = _count_tokens(block)
         if used_tokens + block_tokens > budget:
             logger.info(f"Token budget reached at chunk {label}. Stopping evidence selection.")
             break
+        if url not in url_to_label:
+            url_to_label[url] = label
+            citations.append(Citation(
+                label=label,
+                title=chunk.title,
+                url=url,
+                domain=chunk.domain,
+            ))
+        chunk.citation_label = label
         evidence_parts.append(block)
         used_tokens += block_tokens
 
@@ -133,4 +127,3 @@ def build_context(
         f"~{_count_tokens(prompt)} tokens, {len(citations)} unique sources."
     )
     return prompt, citations
-

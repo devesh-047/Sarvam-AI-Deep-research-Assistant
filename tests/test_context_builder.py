@@ -53,3 +53,29 @@ def test_same_url_gets_same_label():
     prompt, citations = build_context("q", [chunk_a, chunk_b])
     assert len(citations) == 1   # deduplicated
     assert chunk_a.citation_label == chunk_b.citation_label
+
+
+def test_citations_only_include_evidence_within_budget():
+    small = RetrievedChunk(
+        chunk_id=1,
+        source_url="https://included.com",
+        title="Included",
+        domain="included.com",
+        text="short evidence",
+        score=0.9,
+    )
+    huge = RetrievedChunk(
+        chunk_id=2,
+        source_url="https://excluded.com",
+        title="Excluded",
+        domain="excluded.com",
+        text="word " * 3000,
+        score=0.8,
+    )
+
+    prompt, citations = build_context("q", [small, huge], max_tokens=500)
+
+    assert len(citations) == 1
+    assert citations[0].url == "https://included.com"
+    assert "https://included.com" in prompt
+    assert "https://excluded.com" not in prompt

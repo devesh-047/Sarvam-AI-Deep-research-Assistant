@@ -1,5 +1,4 @@
 import httpx
-import json
 from typing import List
 from app.models.schema import SearchResult
 from app.core.config import settings

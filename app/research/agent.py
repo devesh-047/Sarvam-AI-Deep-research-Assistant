@@ -25,8 +25,7 @@ ReAct-style events are pre-scripted safe summaries — never raw chain-of-though
 """
 import asyncio
 import json
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List, AsyncGenerator
 
 from app.core.config import settings
@@ -46,7 +45,10 @@ from app.research.embeddings import embed_texts
 from app.research.vector_store import FAISSVectorStore
 from app.research.retriever import DenseRetriever
 from app.research.context_builder import build_context
-from app.research.generator import generate_answer, generate_answer_stream, format_citations
+from app.research.generator import generate_answer_stream, format_citations
+from app.multilingual.language_detector import detect_language, is_non_english, SUPPORTED_RESPONSE_LANGUAGES
+from app.multilingual.query_normalizer import normalize_query
+from app.multilingual.response_localizer import localize_response
 
 logger = get_logger(__name__)
 
@@ -145,11 +147,53 @@ class ResearchAgent:
 
         return conflicts
 
-    async def stream_run(self, query: str, session_id: int) -> AsyncGenerator[PipelineEvent, None]:
+    async def stream_run(
+        self,
+        query: str,
+        session_id: int,
+        target_language: str = "en",
+    ) -> AsyncGenerator[PipelineEvent, None]:
         """
         Run the full research pipeline, yielding ReAct-style PipelineEvents.
+
+        Args:
+            query:           Raw user query (any language / Romanized Indic)
+            session_id:      Active session ID
+            target_language: ISO 639-1 code for response localization (default "en")
         """
         yield _evt("start", "Initializing deep research pipeline...", "system", {"query": query})
+
+        # ── Phase 5: Language detection + query normalization ──────────────────
+        detected_lang = "english"
+        normalized_query = query
+
+        if settings.enable_multilingual:
+            try:
+                detected_lang_raw = detect_language(query)
+                yield _evt(
+                    "lang_detect",
+                    f"Detected input language: {detected_lang_raw.replace('_', ' ').title()}",
+                    "observation",
+                    {"detected_lang": detected_lang_raw, "original_query": query}
+                )
+
+                if is_non_english(detected_lang_raw):
+                    yield _evt("normalize", "Normalizing multilingual query into English research form...", "action")
+                    normalized_query, detected_lang = await normalize_query(query)
+                    yield _evt(
+                        "normalize_complete",
+                        f"Normalized research query: \"{normalized_query}\"",
+                        "observation",
+                        {"normalized_query": normalized_query, "detected_lang": detected_lang_raw}
+                    )
+                else:
+                    detected_lang = detected_lang_raw
+            except Exception as e:
+                logger.warning(f"[Agent] Multilingual normalization failed: {e}. Using raw query.")
+                normalized_query = query
+
+        # Use normalized query for the rest of the pipeline
+        query = normalized_query
 
         # ── Step 0: Load conversation memory ──────────────────────────────────
         from app.memory.conversation_memory import format_memory_block
@@ -168,7 +212,7 @@ class ResearchAgent:
 
         # ── Step 1: Plan ──────────────────────────────────────────────────────
         yield _evt("plan", "Analysing question and planning research strategy...", "thought")
-        plan = await generate_plan(query)
+        plan = await generate_plan(query, memory_block=memory_block)
         logger.info(f"[Agent] Plan generated. Queries: {plan.search_queries}")
 
         yield _evt(
@@ -310,7 +354,11 @@ class ResearchAgent:
             logger.warning(f"[Agent] FAISS save failed: {e}. Continuing without persistence.")
 
         # ── Step 9: Retrieve ──────────────────────────────────────────────────
-        yield _evt("retrieve", "Retrieving the most relevant evidence passages via dense search...", "action")
+        yield _evt(
+            "retrieve",
+            "Retrieving the most relevant evidence passages via hybrid dense and lexical search...",
+            "action"
+        )
         retrieved = self.retriever.retrieve(query)
 
         # ── Step 10: Select Evidence ──────────────────────────────────────────
@@ -334,6 +382,9 @@ class ResearchAgent:
                         "domain": c.domain,
                         "source_url": c.source_url,
                         "score": round(c.score, 3),
+                        "retrieval_method": c.retrieval_method,
+                        "dense_score": round(c.dense_score, 3) if c.dense_score is not None else None,
+                        "lexical_score": round(c.lexical_score, 3) if c.lexical_score is not None else None,
                         "preview": c.text[:200] + ("…" if len(c.text) > 200 else ""),
                     }
                     for c in retrieved
@@ -371,12 +422,29 @@ class ResearchAgent:
         answer = "".join(answer_chunks).strip()
         logger.info(f"[Agent] Answer generated ({len(answer)} chars).")
 
+        # ── Phase 5: Optional response localization ───────────────────────────
+        localized_answer = answer
+        if target_language and target_language != "en" and settings.enable_multilingual:
+            yield _evt(
+                "localize",
+                f"Localizing answer to {SUPPORTED_RESPONSE_LANGUAGES.get(target_language, target_language)}...",
+                "action",
+                {"target_language": target_language}
+            )
+            localized_answer = await localize_response(answer, target_language)
+            yield _evt(
+                "localize_complete",
+                f"Answer localized to {SUPPORTED_RESPONSE_LANGUAGES.get(target_language, target_language)}.",
+                "observation",
+                {"target_language": target_language, "localized": localized_answer != answer}
+            )
+
         # ── Step 13: Persist results ──────────────────────────────────────────
         citations_json = json.dumps([c.model_dump() for c in citations])
         retrieved_chunks_json = json.dumps([c.model_dump() for c in retrieved])
         self.turn_repo.update_turn_results(
             turn_id=turn.id,
-            final_answer=answer,
+            final_answer=localized_answer,
             citations_json=citations_json,
             retrieved_chunks_json=retrieved_chunks_json,
         )
@@ -396,23 +464,32 @@ class ResearchAgent:
             "Research complete.",
             "final_answer",
             {
-                "answer": answer,
+                "answer": localized_answer,
+                "english_answer": answer,  # always English for evaluation harness
                 "citations": [c.model_dump() for c in citations],
                 "retrieved_chunks": [c.model_dump() for c in retrieved],
                 "citation_text": citation_text,
                 "plan": {"plan_text": plan.plan_text, "search_queries": plan.search_queries},
                 "top_sources": top_sources,
+                "detected_lang": detected_lang,
+                "normalized_query": normalized_query,
+                "target_language": target_language,
             }
         )
 
-    async def run(self, query: str, session_id: int) -> ResearchResult:
+    async def run(
+        self,
+        query: str,
+        session_id: int,
+        target_language: str = "en",
+    ) -> ResearchResult:
         """Synchronous wrapper — runs full pipeline and returns final ResearchResult."""
         logger.info(f"[Agent] Starting research: '{query}'")
         result = None
         plan = None
         answer_chunks = []
 
-        async for event in self.stream_run(query, session_id):
+        async for event in self.stream_run(query, session_id, target_language=target_language):
             if event.stage == "plan_complete" and event.data:
                 plan = ResearchPlan(
                     plan_text=event.data.get("plan_text", ""),
@@ -424,8 +501,10 @@ class ResearchAgent:
                 data = event.data
                 citations = [Citation(**c) for c in data["citations"]]
                 retrieved_chunks = [RetrievedChunk(**c) for c in data["retrieved_chunks"]]
+                # Evaluation harness always uses the English answer for metrics
+                eval_answer = data.get("english_answer") or data["answer"]
                 result = ResearchResult(
-                    answer=data["answer"],
+                    answer=eval_answer,
                     citations=citations,
                     retrieved_chunks=retrieved_chunks,
                     citation_text=data["citation_text"],

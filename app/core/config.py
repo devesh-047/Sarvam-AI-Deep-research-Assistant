@@ -1,4 +1,3 @@
-import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -25,6 +24,9 @@ class Settings(BaseSettings):
 
     # Retrieval
     retrieval_top_k: int = 6
+    dense_retrieval_top_k: int = 12
+    lexical_retrieval_top_k: int = 12
+    rrf_k: int = 60
 
     # LLM
     llm_provider: str = "gemini"          # "gemini" or "openai"
@@ -48,6 +50,13 @@ class Settings(BaseSettings):
     eval_output_dir: str = "evaluation/results"
     eval_min_answer_length: int = 200  # chars — threshold for "complete" answer
     eval_retrieval_score_threshold: float = 0.3  # min score for a retrieval hit
+
+    # Phase 5 — Multilingual (Sarvam)
+    sarvam_api_key: str = ""
+    sarvam_translate_url: str = "https://api.sarvam.ai/translate"
+    sarvam_transliterate_url: str = "https://api.sarvam.ai/transliterate"
+    enable_multilingual: bool = True
+    default_response_language: str = "en"  # ISO 639-1 code
 
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

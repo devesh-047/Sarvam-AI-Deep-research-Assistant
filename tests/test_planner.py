@@ -64,3 +64,14 @@ async def test_generate_plan_async():
     assert plan.plan_text
     assert isinstance(plan.search_queries, list)
     assert len(plan.search_queries) >= 1
+
+
+@pytest.mark.asyncio
+async def test_generate_plan_with_memory_block():
+    plan = await generate_plan(
+        "How many times should I consume it?",
+        memory_block="User: Is drinking coffee good?\nAssistant: Yes, coffee has benefits."
+    )
+    assert plan.plan_text
+    assert isinstance(plan.search_queries, list)
+    assert len(plan.search_queries) >= 1

@@ -84,7 +84,7 @@ def _build_search_queries(query: str) -> List[str]:
     return deduped[:3]
 
 
-async def _generate_plan_llm(query: str) -> ResearchPlan:
+async def _generate_plan_llm(query: str, memory_block: str = "") -> ResearchPlan:
     """
     LLM-based planning — enabled by default.
 
@@ -97,6 +97,15 @@ async def _generate_plan_llm(query: str) -> ResearchPlan:
     planning_prompt = (
         "You are a research planning assistant. Your job is to create a concise, "
         "user-visible research plan for the given question.\n\n"
+    )
+    if memory_block:
+        planning_prompt += (
+            "Here is the context of the recent conversation:\n"
+            f"{memory_block}\n\n"
+            "Use this history to resolve any pronouns or context (e.g. if the user says 'it', "
+            "resolve what 'it' refers to from the chat history when planning the queries).\n\n"
+        )
+    planning_prompt += (
         "Output format (use EXACTLY — no extra text before or after):\n\n"
         "PLAN:\n"
         "Thought:\n"
@@ -153,7 +162,7 @@ def _generate_plan_deterministic(query: str) -> ResearchPlan:
     )
 
 
-async def generate_plan(query: str) -> ResearchPlan:
+async def generate_plan(query: str, memory_block: str = "") -> ResearchPlan:
     """
     Generate a research plan for the given query.
 
@@ -164,5 +173,5 @@ async def generate_plan(query: str) -> ResearchPlan:
     Uses LLM planning by default; falls back to deterministic on failure.
     """
     if settings.enable_llm_planning:
-        return await _generate_plan_llm(query)
+        return await _generate_plan_llm(query, memory_block=memory_block)
     return _generate_plan_deterministic(query)

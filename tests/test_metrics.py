@@ -7,6 +7,9 @@ from evaluation.metrics import (
     answer_completeness,
     answer_length,
     retrieval_hit_count,
+    citation_reference_integrity,
+    citation_source_traceability,
+    retrieval_method_mix,
     uncertainty_acknowledged,
     conflict_acknowledged,
     grounding_ratio,
@@ -57,6 +60,25 @@ def test_sources_cited():
     assert sources_cited(r) == 2
 
 
+def test_citation_reference_integrity_detects_hallucinated_labels():
+    r = _make_result(
+        answer="Supported [S1]. Unsupported [S9].",
+        citations=[{"label": "[S1]", "title": "T1", "url": "http://a.com", "domain": "a.com"}],
+    )
+    assert citation_reference_integrity(r) == 0.5
+
+
+def test_citation_source_traceability_requires_retrieved_url():
+    r = _make_result(
+        citations=[
+            {"label": "[S1]", "title": "T1", "url": "http://a.com", "domain": "a.com"},
+            {"label": "[S2]", "title": "T2", "url": "http://missing.com", "domain": "missing.com"},
+        ],
+        retrieved_chunks=[{"source_url": "http://a.com", "domain": "a.com", "score": 0.8}],
+    )
+    assert citation_source_traceability(r) == 0.5
+
+
 # ── Completeness ──────────────────────────────────────────────────────────────
 
 def test_answer_completeness_empty():
@@ -88,6 +110,14 @@ def test_retrieval_hit_count():
         {"domain": "c.com", "score": 0.5},
     ])
     assert retrieval_hit_count(r, min_score=0.3) == 2
+
+
+def test_retrieval_method_mix():
+    r = _make_result(retrieved_chunks=[
+        {"domain": "a.com", "score": 0.8, "retrieval_method": "dense"},
+        {"domain": "b.com", "score": 0.7, "retrieval_method": "hybrid"},
+    ])
+    assert retrieval_method_mix(r) == "dense,hybrid"
 
 
 # ── Uncertainty and conflict ──────────────────────────────────────────────────
@@ -138,8 +168,10 @@ def test_score_result_has_all_keys():
     scored = score_result(r)
     expected_keys = [
         "id", "category", "has_error", "citation_presence", "citation_count",
-        "sources_cited", "answer_completeness", "answer_length",
+        "sources_cited", "citation_reference_integrity", "citation_source_traceability",
+        "answer_completeness", "answer_length",
         "retrieval_hit_count", "retrieval_source_count",
+        "retrieval_method_mix",
         "uncertainty_acknowledged", "conflict_acknowledged",
         "grounding_ratio", "latency_ms",
     ]

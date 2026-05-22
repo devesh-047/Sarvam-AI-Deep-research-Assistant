@@ -28,7 +28,6 @@ async def test_agent_stream_run_event_sequence():
          patch("app.research.agent.chunk_document") as mock_chunk, \
          patch("app.research.agent.embed_texts") as mock_embed, \
          patch("app.research.agent.build_context") as mock_context, \
-         patch("app.research.agent.generate_answer", new_callable=AsyncMock) as mock_generate, \
          patch("app.research.summarizer.update_rolling_summary", new_callable=AsyncMock) as mock_summary:
          
         # Mocking returns
@@ -51,7 +50,6 @@ async def test_agent_stream_run_event_sequence():
         agent.vector_store.add.return_value = [0]
         
         mock_context.return_value = ("prompt", [])
-        mock_generate.return_value = "Final answer"
         mock_summary.return_value = "New rolling summary"
         
         # Collect events

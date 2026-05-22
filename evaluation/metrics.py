@@ -41,6 +41,37 @@ def sources_cited(result: Dict[str, Any]) -> int:
     return len(result.get("citations") or [])
 
 
+def citation_reference_integrity(result: Dict[str, Any]) -> float:
+    """
+    Fraction of answer citation markers that exist in the citations payload.
+
+    This catches hallucinated labels such as `[S9]` when only `[S1]` and `[S2]`
+    were actually produced by the context builder.
+    """
+    answer_labels = set(re.findall(r"\[S\d+\]", result.get("answer") or ""))
+    if not answer_labels:
+        return 0.0
+    declared_labels = {c.get("label") for c in (result.get("citations") or []) if c.get("label")}
+    return round(len(answer_labels & declared_labels) / len(answer_labels), 3)
+
+
+def citation_source_traceability(result: Dict[str, Any]) -> float:
+    """
+    Fraction of declared citation URLs that came from retrieved chunks.
+
+    A grounded answer should cite only sources that were actually selected from
+    retrieval, not arbitrary URLs introduced during generation or formatting.
+    """
+    citations = result.get("citations") or []
+    if not citations:
+        return 0.0
+    retrieved_urls = {c.get("source_url") for c in (result.get("retrieved_chunks") or []) if c.get("source_url")}
+    citation_urls = [c.get("url") for c in citations if c.get("url")]
+    if not citation_urls:
+        return 0.0
+    return round(sum(1 for url in citation_urls if url in retrieved_urls) / len(citation_urls), 3)
+
+
 # ── Answer completeness ───────────────────────────────────────────────────────
 
 def answer_completeness(result: Dict[str, Any], min_chars: int = 200) -> str:
@@ -75,6 +106,13 @@ def retrieval_source_count(result: Dict[str, Any]) -> int:
     """Number of unique domains in retrieved chunks."""
     chunks = result.get("retrieved_chunks") or []
     return len({c.get("domain", "") for c in chunks if c.get("domain")})
+
+
+def retrieval_method_mix(result: Dict[str, Any]) -> str:
+    """Compact summary of dense/BM25/hybrid retrieval methods represented."""
+    chunks = result.get("retrieved_chunks") or []
+    methods = sorted({c.get("retrieval_method", "dense") for c in chunks})
+    return ",".join(methods) if methods else "none"
 
 
 # ── Uncertainty and conflict ─────────────────────────────────────────────────
@@ -136,10 +174,13 @@ def score_result(result: Dict[str, Any], min_chars: int = 200, min_score: float 
         "citation_presence": citation_presence(result),
         "citation_count": citation_count(result),
         "sources_cited": sources_cited(result),
+        "citation_reference_integrity": citation_reference_integrity(result),
+        "citation_source_traceability": citation_source_traceability(result),
         "answer_completeness": answer_completeness(result, min_chars=min_chars),
         "answer_length": answer_length(result),
         "retrieval_hit_count": retrieval_hit_count(result, min_score=min_score),
         "retrieval_source_count": retrieval_source_count(result),
+        "retrieval_method_mix": retrieval_method_mix(result),
         "uncertainty_acknowledged": uncertainty_acknowledged(result),
         "conflict_acknowledged": conflict_acknowledged(result),
         "grounding_ratio": grounding_ratio(result),
@@ -171,6 +212,8 @@ def aggregate_scores(scored_results: List[Dict[str, Any]]) -> Dict[str, Any]:
         "success_rate": round((n - errors) / n, 3),
         "avg_citation_presence": _avg("citation_presence"),
         "avg_citation_count": _avg("citation_count"),
+        "avg_citation_reference_integrity": _avg("citation_reference_integrity"),
+        "avg_citation_source_traceability": _avg("citation_source_traceability"),
         "avg_grounding_ratio": _avg("grounding_ratio"),
         "avg_latency_ms": _avg("latency_ms"),
         "avg_answer_length": _avg("answer_length"),

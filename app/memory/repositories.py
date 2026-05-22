@@ -1,4 +1,3 @@
-import sqlite3
 from typing import List, Optional
 from datetime import datetime, timezone
 from app.memory.db import get_connection
@@ -249,3 +248,33 @@ class ChunkRepository:
             ))
         return result
 
+    def list_all(self) -> List[DocumentChunk]:
+        """Retrieve all persisted chunks with source metadata for lexical retrieval."""
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """SELECT c.id, c.source_id, c.session_id, c.turn_id,
+                          c.chunk_text, c.chunk_index, c.token_count, c.embedding_id,
+                          s.url, s.title, s.domain
+                   FROM chunks c
+                   JOIN sources s ON c.source_id = s.id
+                   ORDER BY c.id ASC"""
+            )
+            rows = cursor.fetchall()
+
+        return [
+            DocumentChunk(
+                chunk_id=row["id"],
+                source_id=row["source_id"],
+                session_id=row["session_id"],
+                turn_id=row["turn_id"],
+                text=row["chunk_text"],
+                chunk_index=row["chunk_index"],
+                token_count=row["token_count"],
+                embedding_id=row["embedding_id"],
+                source_url=row["url"],
+                title=row["title"],
+                domain=row["domain"],
+            )
+            for row in rows
+        ]

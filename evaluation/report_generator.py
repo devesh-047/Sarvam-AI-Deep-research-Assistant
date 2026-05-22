@@ -68,6 +68,8 @@ def generate_report(results_path: str, output_path: str) -> str:
     lines.append(f"| Success rate | {agg['success_rate'] * 100:.1f}% |")
     lines.append(f"| Avg citation presence | {agg['avg_citation_presence'] * 100:.1f}% |")
     lines.append(f"| Avg citations per answer | {agg['avg_citation_count']:.1f} |")
+    lines.append(f"| Citation label integrity | {agg['avg_citation_reference_integrity'] * 100:.1f}% |")
+    lines.append(f"| Citation source traceability | {agg['avg_citation_source_traceability'] * 100:.1f}% |")
     lines.append(f"| Avg grounding ratio | {agg['avg_grounding_ratio']:.2f} |")
     lines.append(f"| Avg latency | {agg['avg_latency_ms']:.0f} ms |")
     lines.append(f"| Avg answer length | {agg['avg_answer_length']:.0f} chars |")
@@ -102,8 +104,8 @@ def generate_report(results_path: str, output_path: str) -> str:
 
     # ── Per-Question Detail Table ────────────────────────────────────────────
     lines.append("## Per-Question Results\n")
-    lines.append("| ID | Category | Latency (ms) | Completeness | Citations | Grounding | Uncertainty | Conflict | Error |")
-    lines.append("|---|---|---|---|---|---|---|---|---|")
+    lines.append("| ID | Category | Latency (ms) | Completeness | Citations | Citation Integrity | Traceability | Grounding | Retrieval | Uncertainty | Conflict | Error |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
 
     for r, s in zip(raw_results, scored):
         err_flag = "⚠️" if s["has_error"] else "✅"
@@ -113,7 +115,10 @@ def generate_report(results_path: str, output_path: str) -> str:
             f"| {s['latency_ms']:.0f} "
             f"| {s['answer_completeness']} "
             f"| {s['citation_count']} "
+            f"| {s['citation_reference_integrity']:.2f} "
+            f"| {s['citation_source_traceability']:.2f} "
             f"| {s['grounding_ratio']:.2f} "
+            f"| {s['retrieval_method_mix']} "
             f"| {'✓' if s['uncertainty_acknowledged'] else '✗'} "
             f"| {'✓' if s['conflict_acknowledged'] else '✗'} "
             f"| {err_flag} |"
@@ -162,7 +167,10 @@ def generate_report(results_path: str, output_path: str) -> str:
     lines.append("|---|---|")
     lines.append("| Citation Presence | 1.0 if answer contains at least one `[Sn]` marker |")
     lines.append("| Citation Count | Number of unique `[Sn]` markers in the answer |")
+    lines.append("| Citation Label Integrity | Fraction of answer citation labels present in the citations payload |")
+    lines.append("| Citation Source Traceability | Fraction of citation URLs that also appear in retrieved chunks |")
     lines.append("| Grounding Ratio | Fraction of sentences containing a citation marker |")
+    lines.append("| Retrieval | Retrieval methods represented in returned chunks: dense, bm25, or hybrid |")
     lines.append("| Answer Completeness | `complete` ≥200 chars, `short` <200 chars, `empty` |")
     lines.append("| Uncertainty Acknowledged | Answer contains phrases like 'insufficient', 'unclear', etc. |")
     lines.append("| Conflict Acknowledged | Answer contains phrases like 'however', 'on the other hand', etc. |")
